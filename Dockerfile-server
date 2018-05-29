@@ -1,0 +1,21 @@
+FROM forcedinductionz/lava-docker
+
+RUN apt-get update && apt-get install -y emacs24
+
+RUN mkdir -p /home/lava
+
+COPY ./home-bin-server /home/lava/bin
+COPY ./home /home
+COPY ./etc /etc
+COPY ./usr /usr
+
+COPY .bashrc /root/
+
+COPY ./root/start-server.sh /start.sh
+COPY ./root/stop-server.sh /stop.sh
+
+RUN mkdir -p /var/lib/nexell
+
+EXPOSE 69 80 5555 5556
+
+CMD /start.sh && bash
