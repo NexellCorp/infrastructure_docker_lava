@@ -1,0 +1,27 @@
+{# device_type: s5p4418-navi-qt-type #}
+{% extends 'base.jinja2' %}
+{% block body %}
+
+{% block vland %}
+{# skip the parameters dict at top level #}
+{% endblock %}
+
+actions:
+  deploy:
+    methods:
+      qemu-nfs:
+      lxc:
+      fastboot:
+    connections:
+      lxc:
+      serial:
+  boot:
+    connections:
+      ssh:
+      lxc:
+    methods:
+      lxc:
+      fastboot:
+      qemu:
+
+{% endblock %}
