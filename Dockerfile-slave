@@ -13,9 +13,6 @@ RUN mkdir -m 0750 /.android
 ADD adb/insecure_shared_adbkey /.android/adbkey
 ADD adb/insecure_shared_adbkey.pub /.android/adbkey.pub
 
-#RUN wget -qO- "http://dl.google.com/android/android-sdk_r24.3.4-linux.tgz" | tar -zx -C /opt && \
-	    #echo y | android update sdk --no-ui --all --filter platform-tools --force
-
 RUN mkdir -p /home/lava
 RUN mkdir -p /opt/share
 RUN mkdir -p /root/.config
@@ -25,9 +22,7 @@ COPY ./home-bin-slave /home/lava/bin
 COPY ./LAVA-TEST /opt/share
 COPY ./etc/ser2net.conf /etc/
 COPY ./usr/lib/python3 /usr/lib/python3/
-#COPY .bashrc /root/
 
-EXPOSE 69 80 5555 5556
+EXPOSE 69 80 5555 5556 22
 
 RUN mkdir -p /var/lib/nexell
-

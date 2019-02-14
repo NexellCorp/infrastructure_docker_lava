@@ -34,7 +34,10 @@ from lava_dispatcher.actions.deploy.apply_overlay import (
     ApplyOverlaySparseImage,
     ApplyOverlayImage,
 )
-from lava_dispatcher.actions.deploy.download import DownloaderAction
+from lava_dispatcher.actions.deploy.download import (
+    DownloaderAction,
+    HttpDownloadAction,
+)
 from lava_dispatcher.utils.filesystem import copy_to_lxc
 from lava_dispatcher.utils.lxc import is_lxc_requested, lxc_cmd_prefix
 from lava_dispatcher.actions.boot.fastboot import EnterFastbootAction
@@ -42,6 +45,11 @@ from lava_dispatcher.actions.boot.u_boot import UBootEnterFastbootAction
 from lava_dispatcher.power import PDUReboot, ReadFeedback
 # Nexell extension
 from lava_dispatcher.actions.deploy.apply_overlay import ApplyNexellOverlay
+import urllib.parse as lavaurl
+from lava_dispatcher.utils.compression import (
+    compress_file,
+    decompress_file,
+)
 
 # pylint: disable=too-many-return-statements,too-many-instance-attributes,missing-docstring
 
@@ -99,6 +107,7 @@ class FastbootAction(DeployAction):  # pylint:disable=too-many-instance-attribut
         self.internal_pipeline = Pipeline(parent=self, job=self.job, parameters=parameters)
         image_keys = list(parameters['images'].keys())
         if self.test_needs_overlay(parameters):
+            self.logger.debug("[SEOJI] add OverlayAction")
             self.internal_pipeline.add_action(OverlayAction())
         # Check if the device has a power command such as HiKey, Dragonboard,
         # etc. against device that doesn't like Nexus, etc.
@@ -113,7 +122,17 @@ class FastbootAction(DeployAction):  # pylint:disable=too-many-instance-attribut
             self.internal_pipeline.add_action(ResetDevice())
         elif 'nexell_ext' in image_keys:
             # Nexell extension
-            self.internal_pipeline.add_action(OverlayAction())
+            #self.internal_pipeline.add_action(OverlayAction())
+
+            # download build result
+            if 'url' in parameters['images']['nexell_ext']:
+                self.logger.debug("[SEOJI] url:" + str(parameters['images']['nexell_ext']['url']))
+                self.path = '/opt/share'
+                self.internal_pipeline.add_action(DownloaderAction('nexell_ext', self.path))
+                #if 'compression' in parameters['images']['nexell_ext]:
+                   #self.logger.debug("[SEOJI] yes compression param exist") 
+                    
+
             self.logger.debug("SUKER: parameters in deploy/fastboot.py : " + str(parameters))
             self.internal_pipeline.add_action(EnterNexellFastbootAction(parameters,'deploy_script','deploy_command1','dir_name'))
             self.internal_pipeline.add_action(ApplyNexellDeployAction(parameters,'deploy_script','deploy_command2','dir_name'))
@@ -217,12 +236,21 @@ class ApplyNexellDeployAction(DeployAction):
         
     def run(self, connection, args=None):
         connection = super(ApplyNexellDeployAction, self).run(connection, args)
-        #test_path = self.job.device['device_path']
-        test_path = self.device_path
-        self.logger.debug("test_path:%s",test_path)
-        fastboot_cmd = [self.cmd_script, self.cmd_param1, self.cmd_param2, test_path]
-        self.logger.debug("SUKER: fastboot cmd %s %s", self.cmd_param1, self.cmd_param2)
-        command_output = self.run_command(fastboot_cmd)        
+        if 'partial_name' not in self.parameters['images']['nexell_ext']:
+            # fuse all
+            self.logger.debug("test_path:%s", self.device_path)
+            fastboot_cmd = [self.cmd_script, self.cmd_param1, self.cmd_param2, self.device_path]
+            self.logger.debug("SUKER: fastboot cmd %s %s", self.cmd_param1, self.cmd_param2)
+            command_output = self.run_command(fastboot_cmd)        
+        else:
+            self.logger.debug("[SEOJI] partial update")
+            # fuse partial
+            filename = os.path.basename(self.parameters['images']['nexell_ext']['url'])
+
+            self.logger.debug("test_path:%s", self.device_path)
+            fastboot_cmd = [self.cmd_script, self.cmd_param1, self.cmd_param2, self.device_path, self.parameters['images']['nexell_ext']['partial_name']]
+            self.logger.debug("SUKER: fastboot cmd %s %s", self.cmd_param1, self.cmd_param2)
+            command_output = self.run_command(fastboot_cmd)        
 
         # if type(command_output) == bool :
         #     self.logger.debug("SUKER: command_output type %s", type(command_output))

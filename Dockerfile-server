@@ -8,9 +8,7 @@ COPY ./home-bin-server /home/lava/bin
 COPY ./home /home
 
 COPY ./etc /etc
-#COPY ./usr /usr
-#COPY .bashrc /root/
 
 #RUN mkdir -p /var/lib/nexell
 
-EXPOSE 69 80 5555 5556 5432 8000
+EXPOSE 69 80 5555 5556 5432 8000 5500
